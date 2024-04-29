@@ -5,6 +5,7 @@ import json
 import tiktoken
 import re
 import cohere
+import openai
 import pickle
 import numpy as np
 import time
@@ -17,6 +18,7 @@ app.config['SECRET_KEY'] = 'this_is_bad_secret_key'
 # get your openai api key at https://platform.openai.com/
 OPENAI_API_KEY = config.OPENAI_API_KEY
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+openai.api_key = OPENAI_API_KEY
 # get your cohere api key at https://cohere.com/
 COHERE_KEY = config.COHERE_KEY
 co = cohere.Client(COHERE_KEY)
@@ -46,18 +48,25 @@ def read_template():
 prompt_template = read_template()
 
 
-def get_context_embeddings_co():
-    context_emb = co.embed(texts=document_chunks, input_type="search_document", model="embed-multilingual-v3.0").embeddings
-    context_emb = np.asarray(context_emb)
-    return context_emb
+#def get_context_embeddings_co():
+#    context_emb = co.embed(texts=document_chunks, input_type="search_document", model="embed-multilingual-v3.0").embeddings
+#    context_emb = np.asarray(context_emb)
+#    return context_emb
 
-context_emb = get_context_embeddings_co()
+def get_context_embeddings_co(docs):
+    res = openai.embeddings.create(input=docs, model="text-embedding-ada-002")
+    doc_embeds = [r.embedding for r in res.data]
+    return np.asarray(doc_embeds)
+
+context_emb = get_context_embeddings_co(document_chunks[:1000])
 
 def generate_full_llm_query(query, document_chunks, prompt_template, limit_input_tokens=4096):
 
     # cohere embeddings
-    query_emb = co.embed(texts=[query], input_type="search_query", model="embed-multilingual-v3.0").embeddings
-    query_emb = np.asarray(query_emb)
+    #query_emb = co.embed(texts=[query], input_type="search_query", model="embed-multilingual-v3.0").embeddings
+    #openai embeddings
+    query_emb = openai.embeddings.create(input=query, model="text-embedding-ada-002")
+    query_emb = np.asarray(query_emb.data[0].embedding)
 
     #Compute the dot product between query embedding and document embedding
     scores = np.dot(query_emb, context_emb.T).squeeze()
