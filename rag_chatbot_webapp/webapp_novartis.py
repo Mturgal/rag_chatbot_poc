@@ -25,10 +25,9 @@ os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 openai.api_key = OPENAI_API_KEY
 
 limit_input_tokens=4096
-pdf_folder_path = 'data/dataset_folder/pdf_folder'
-prompt_template_path = 'data/prompt_template/prompt_template.txt'
+prompt_template_path = 'prompt_template.txt'
 num_chunks_of_text = 8 # number of chunks of text to search via embeddings similarity
-client = QdrantClient(url="http://localhost:6333")
+client = QdrantClient(host="qdrant", port=6333)
 
 
 def read_template():
